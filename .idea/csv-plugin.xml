@@ -3,7 +3,7 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\gui.py">
+        <entry key="\README.md">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -13,7 +13,7 @@
         <entry key="\main.py">
           <value>
             <Attribute>
-              <option name="separator" value="|" />
+              <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>

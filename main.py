@@ -1,30 +1,12 @@
 import PySimpleGUI as gui
 import socket
 import flux_led
+from os import system
 from time import sleep
 
 # PySimpleGUI : https://pypi.org/project/PySimpleGUI/
 # PySimpleGUI cookbook : https://pysimplegui.readthedocs.io/en/latest/cookbook/
 
-
-# response from a 5-channel LEDENET controller:
-# pos  0  1  2  3  4  5  6  7  8  9 10 11 12 13
-#    81 25 23 61 21 06 38 05 06 f9 01 00 0f 9d
-#     |  |  |  |  |  |  |  |  |  |  |  |  |  |
-#     |  |  |  |  |  |  |  |  |  |  |  |  |  checksum
-#     |  |  |  |  |  |  |  |  |  |  |  |  color mode (f0 colors were set, 0f whites, 00 all were set)
-#     |  |  |  |  |  |  |  |  |  |  |  cold-white
-#     |  |  |  |  |  |  |  |  |  |  <don't know yet>
-#     |  |  |  |  |  |  |  |  |  warmwhite
-#     |  |  |  |  |  |  |  |  blue
-#     |  |  |  |  |  |  |  green
-#     |  |  |  |  |  |  red
-#     |  |  |  |  |  speed: 0f = highest f0 is lowest
-#     |  |  |  |  <don't know yet>
-#     |  |  |  preset pattern
-#     |  |  off(23)/on(24)
-#     |  type
-#     msg head
 
 def led_connect(ip):
     led = flux_led.WifiLedBulb(ipaddr=ip, timeout=3)
@@ -37,35 +19,50 @@ def get_status(led):
     return led
 
 
+def percent_to_byte(percent):
+    if percent > 100:
+        percent = 100
+    if percent < 0:
+        percent = 0
+    return int(round(percent * 255/100, 0))
+
+
+def byte_to_percent(byte):
+    if byte > 255:
+        byte = 255
+    if byte < 0:
+        byte = 0
+    return int(round(byte * 100/255, 0))
+
+
 def sunrise_mode(led):
     for i in range(0, 100, 5):
-        i = flux_led.utils.percentToByte(i)
+        i = percent_to_byte(i)
         led.setRgb(255, 0, 0, brightness=i)
         sleep(0.1)
 
 
 def sunset_mode(led):
     for i in range(100, 0, -5):
-        i = flux_led.utils.percentToByte(i)
+        i = percent_to_byte(i)
         led.setRgb(0, 0, 0, brightness=i)
         sleep(0.1)
 
 
 def get_brightness(led):
-    b = flux_led.utils.byteToPercent(led.brightness)
+    b = byte_to_percent(led.brightness)
     led.update_state()
     return b
 
 
-def change_brightness(led, b):
-    b = int(b)
-    b = flux_led.utils.percentToByte(b)
-    led.setRgb(255, 0, 0, brightness=b)
+def change_brightness(led, percent):
+    byte = percent_to_byte(percent)
+    led.setRgb(255, 0, 0, brightness=byte)
     led.update_state()
 
 
 if __name__ == '__main__':
-    VER = "v0.1"
+    VER = "v0.1.1"
     TITLE = "Dimmer Controller"
 
     bulb = None
@@ -73,7 +70,7 @@ if __name__ == '__main__':
     gui.theme('Dark Grey 2')
 
     section1 = [
-        [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("192.168.168.28", key='_IP', size=(15, 1)), gui.Button("Connect", key='_CONNECT', bind_return_key=True)],
+        [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("", key='_IP', size=(15, 1)), gui.Button("Connect", key='_CONNECT', bind_return_key=True)],
         [gui.Text("Dimmer 시간", size=(12, 1)), gui.InputText("", key="_CLOCK", size=(24, 1), readonly=True)],
         [gui.Text("Dimmer 밝기", size=(12, 1)),
          gui.Slider((1, 100), key='_SLIDER', default_value=0, orientation='h', size=(16, 20), enable_events=True, disable_number_display=True, disabled=True),
@@ -94,7 +91,8 @@ if __name__ == '__main__':
         [gui.Text(f"{TITLE} - {VER}", font=('맑은 고딕', 18), text_color='#3399ff')],
         [gui.pin(gui.Column(section1, key='_SECTION1', visible=False))],
         [gui.pin(gui.Column(section2, key='_SECTION2', visible=False))],
-        [gui.Text('Blog https://blog.naver.com/ic21107')]
+        [gui.Text('Blog: https://blog.naver.com/ic21107', key='_BLOG', enable_events=True)],
+        [gui.Text('Github: https://github.com/pwnbit/Dimmer_controller', key='_GITHUB', enable_events=True)]
     ]
 
     window = gui.Window(f"{TITLE} - {VER}", layout, finalize=True)
@@ -138,6 +136,10 @@ if __name__ == '__main__':
             change_brightness(bulb, values['_SLIDER'])
             window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
             window['_SLIDER'].update(value=get_brightness(bulb))
+        elif event == '_BLOG':
+            system('start "" https://blog.naver.com/ic21107')
+        elif event == '_GITHUB':
+            system('start "" https://github.com/pwnbit/Dimmer_controller')
 
     if bulb:
         bulb.close()
