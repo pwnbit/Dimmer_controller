@@ -23,3 +23,7 @@ Wifi LED Cotroller를 PC에서 제어하기 위한 Python 프로그램으로,
 * percent_to_byte(), byte_to_percent() 결과를 반올림 처리
 * IP 입력란의 기본값 제거
 * Blog, Github URL 추가
+#### 2021-03-07 v0.1.2
+* Disconnect 기능 추가
+* Controller 시간 동기화 기능 추가
+* 코드 최적화

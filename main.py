@@ -19,6 +19,11 @@ def get_status(led):
     return led
 
 
+def set_time_sync(led):
+    led.setClock()
+    led.update_state()
+
+
 def percent_to_byte(percent):
     if percent > 100:
         percent = 100
@@ -50,9 +55,9 @@ def sunset_mode(led):
 
 
 def get_brightness(led):
-    b = byte_to_percent(led.brightness)
+    percent = byte_to_percent(led.brightness)
     led.update_state()
-    return b
+    return percent
 
 
 def change_brightness(led, percent):
@@ -62,7 +67,7 @@ def change_brightness(led, percent):
 
 
 if __name__ == '__main__':
-    VER = "v0.1.1"
+    VER = "v0.1.2"
     TITLE = "Dimmer Controller"
 
     bulb = None
@@ -70,8 +75,10 @@ if __name__ == '__main__':
     gui.theme('Dark Grey 2')
 
     section1 = [
-        [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("", key='_IP', size=(15, 1)), gui.Button("Connect", key='_CONNECT', bind_return_key=True)],
-        [gui.Text("Dimmer 시간", size=(12, 1)), gui.InputText("", key="_CLOCK", size=(24, 1), readonly=True)],
+        [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("192.168.168.28", key='_IP', size=(14, 1)),
+         gui.Button("Connect", key='_CONNECT', bind_return_key=True, pad=((21, 5), 2)),
+         gui.Button("Disconnect", key='_DISCONNECT', pad=(5, 2), disabled=True, visible=False)],
+        [gui.Text("Dimmer 시간", size=(12, 1)), gui.InputText("", key="_CLOCK", size=(19, 1), readonly=True), gui.Button("Sync", key='_SYNC')],
         [gui.Text("Dimmer 밝기", size=(12, 1)),
          gui.Slider((1, 100), key='_SLIDER', default_value=0, orientation='h', size=(16, 20), enable_events=True, disable_number_display=True, disabled=True),
          gui.Text("0%", key="_BRIGHTNESS", size=(5, 1), pad=(0, 0))]
@@ -89,20 +96,19 @@ if __name__ == '__main__':
 
     layout = [
         [gui.Text(f"{TITLE} - {VER}", font=('맑은 고딕', 18), text_color='#3399ff')],
-        [gui.pin(gui.Column(section1, key='_SECTION1', visible=False))],
+        [gui.pin(gui.Column(section1, key='_SECTION1'))],
         [gui.pin(gui.Column(section2, key='_SECTION2', visible=False))],
-        [gui.Text('Blog: https://blog.naver.com/ic21107', key='_BLOG', enable_events=True)],
-        [gui.Text('Github: https://github.com/pwnbit/Dimmer_controller', key='_GITHUB', enable_events=True)]
+        [gui.Text('Blog: https://blog.naver.com/ic21107', key='_BLOG', pad=(2, 1), enable_events=True)],
+        [gui.Text('Github: https://github.com/pwnbit/Dimmer_controller', key='_GITHUB', pad=(2, 1), enable_events=True)]
     ]
 
     window = gui.Window(f"{TITLE} - {VER}", layout, finalize=True)
-    window['_SECTION1'].update(visible=True)
 
     while True:
         event, values = window.read()
         # print(f'{event}, {values}')
 
-        if event == gui.WINDOW_CLOSED or event == 'Quit':
+        if event == gui.WINDOW_CLOSED:
             break
         elif event == '_CONNECT':
             try:
@@ -113,34 +119,49 @@ if __name__ == '__main__':
                 exit(1)
             # Update _SECTION1
             window['_IP'].update(disabled=True)
-            window['_CONNECT'].update(disabled=True)
-            window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
-            window['_SLIDER'].update(value=get_brightness(bulb))
+            window['_CONNECT'].update(disabled=True, visible=False)
+            window['_DISCONNECT'].update(disabled=False, visible=True)
+            window['_BRIGHTNESS'].update(f"{get_brightness(bulb)}%")
+            window['_SLIDER'].update(get_brightness(bulb), disabled=False)
             # Update _SECTION2
             window['_CLOCK'].update(bulb.getClock())
             window['_TIMER'].update(bulb.getTimers())
-            window['_SLIDER'].update(disabled=False)
             window['_SECTION2'].update(visible=True)
-            print(get_status(bulb))
+        elif event == '_DISCONNECT':
+            # Update _SECTION1
+            window['_IP'].update(disabled=False)
+            window['_CONNECT'].update(disabled=False, visible=True)
+            window['_DISCONNECT'].update(disabled=True, visible=False)
+            window['_BRIGHTNESS'].update("0%")
+            window['_SLIDER'].update("0", disabled=True)
+            # Update _SECTION2
+            window['_CLOCK'].update("")
+            window['_SECTION2'].update(visible=False)
+            window['_TIMER'].update(bulb.getTimers())
+            if bulb:
+                bulb.close()
 
         # Change Brightness
         elif event in ('_0', '_20', '_40', '_60', '_80', '_100'):
             change_brightness(bulb, event.replace("_", ""))
             window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
-            window['_SLIDER'].update(value=get_brightness(bulb))
+            window['_SLIDER'].update(get_brightness(bulb))
         elif event == '_APPLY':
             change_brightness(bulb, values['_MANUAL'])
             window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
-            window['_SLIDER'].update(value=get_brightness(bulb))
+            window['_SLIDER'].update(get_brightness(bulb))
         elif event == '_SLIDER':
             change_brightness(bulb, values['_SLIDER'])
             window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
-            window['_SLIDER'].update(value=get_brightness(bulb))
+            window['_SLIDER'].update(get_brightness(bulb))
+        # Etc.
+        elif event == '_SYNC':
+            set_time_sync(bulb)
+            window['_CLOCK'].update(bulb.getClock())
         elif event == '_BLOG':
             system('start "" https://blog.naver.com/ic21107')
         elif event == '_GITHUB':
             system('start "" https://github.com/pwnbit/Dimmer_controller')
-
     if bulb:
         bulb.close()
     window.close()
