@@ -76,6 +76,7 @@ if __name__ == '__main__':
     gui.set_options(font=('맑은 고딕', 9))
     gui.theme('Dark Grey 2')
 
+    # section1 : 연결 전 보여질 부분
     section1 = [
         [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("192.168.168.28", key='_IP', size=(14, 1)),
          gui.Button("Connect", key='_CONNECT', size=(9, 1), bind_return_key=True),
@@ -85,6 +86,8 @@ if __name__ == '__main__':
          gui.Slider((1, 100), key='_SLIDER', default_value=0, orientation='h', size=(17, 20), enable_events=True, disable_number_display=True, disabled=True),
          gui.Text("0%", key="_BRIGHTNESS", size=(5, 1), pad=(6, 0))]
     ]
+
+    # section2 : 연결 후 보여질 부분
     section2 = [
         [gui.Text("─" * 23)],
         [gui.Frame("Presets", [
@@ -96,6 +99,7 @@ if __name__ == '__main__':
             gui.Listbox(values=(), key="_TIMER", size=(0, 6), no_scrollbar=True, auto_size_text=True, select_mode=gui.SELECT_MODE_SINGLE)]])]
     ]
 
+    # Layout
     layout = [
         [gui.Text(f"{TITLE} - {VER}", font=('맑은 고딕', 18), text_color='#3399ff')],
         [gui.pin(gui.Column(section1, key='_SECTION1'))],
@@ -108,7 +112,6 @@ if __name__ == '__main__':
 
     while True:
         event, values = window.read()
-        # print(f'{event}, {values}')
 
         if event == gui.WINDOW_CLOSED:
             break
