@@ -1,4 +1,4 @@
-# Dimmer Controller.py ![version](https://img.shields.io/badge/version-0.1.1-blue)
+# Dimmer Controller.py ![version](https://img.shields.io/badge/version-1.0.0-blue)
 Wifi LED Cotroller를 PC에서 제어하기 위한 Python 프로그램으로,
 [flux_led](https://github.com/beville/flux_led) 를 기반으로 하고 있습니다.
 
@@ -30,3 +30,5 @@ Wifi LED Cotroller를 PC에서 제어하기 위한 Python 프로그램으로,
 #### 2021-03-11 v0.1.3
 * percent_to_byte(), byte_to_percent() 함수의 버그 수정
 * 버튼 크기 조정
+#### 2021-03-11 v1.0.0
+* 실행파일(exe) 배포
