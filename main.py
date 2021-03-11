@@ -25,6 +25,7 @@ def set_time_sync(led):
 
 
 def percent_to_byte(percent):
+    percent = int(percent)
     if percent > 100:
         percent = 100
     if percent < 0:
@@ -33,6 +34,7 @@ def percent_to_byte(percent):
 
 
 def byte_to_percent(byte):
+    byte = int(byte)
     if byte > 255:
         byte = 255
     if byte < 0:
@@ -67,7 +69,7 @@ def change_brightness(led, percent):
 
 
 if __name__ == '__main__':
-    VER = "v0.1.2"
+    VER = "v0.1.3"
     TITLE = "Dimmer Controller"
 
     bulb = None
@@ -76,12 +78,12 @@ if __name__ == '__main__':
 
     section1 = [
         [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("192.168.168.28", key='_IP', size=(14, 1)),
-         gui.Button("Connect", key='_CONNECT', bind_return_key=True, pad=((21, 5), 2)),
-         gui.Button("Disconnect", key='_DISCONNECT', pad=(5, 2), disabled=True, visible=False)],
-        [gui.Text("Dimmer 시간", size=(12, 1)), gui.InputText("", key="_CLOCK", size=(19, 1), readonly=True), gui.Button("Sync", key='_SYNC')],
+         gui.Button("Connect", key='_CONNECT', size=(9, 1), bind_return_key=True),
+         gui.Button("Disconnect", key='_DISCONNECT', size=(9, 1), disabled=True, visible=False)],
+        [gui.Text("Dimmer 시간", size=(12, 1)), gui.InputText("", key="_CLOCK", size=(19, 1), readonly=True), gui.Button("Sync", key='_SYNC', pad=(6, 1))],
         [gui.Text("Dimmer 밝기", size=(12, 1)),
-         gui.Slider((1, 100), key='_SLIDER', default_value=0, orientation='h', size=(16, 20), enable_events=True, disable_number_display=True, disabled=True),
-         gui.Text("0%", key="_BRIGHTNESS", size=(5, 1), pad=(0, 0))]
+         gui.Slider((1, 100), key='_SLIDER', default_value=0, orientation='h', size=(17, 20), enable_events=True, disable_number_display=True, disabled=True),
+         gui.Text("0%", key="_BRIGHTNESS", size=(5, 1), pad=(6, 0))]
     ]
     section2 = [
         [gui.Text("─" * 23)],

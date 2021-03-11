@@ -27,3 +27,6 @@ Wifi LED Cotroller를 PC에서 제어하기 위한 Python 프로그램으로,
 * Disconnect 기능 추가
 * Controller 시간 동기화 기능 추가
 * 코드 최적화
+#### 2021-03-11 v0.1.3
+* percent_to_byte(), byte_to_percent() 함수의 버그 수정
+* 버튼 크기 조정
