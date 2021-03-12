@@ -80,11 +80,11 @@ def verify_val(val_type, val):
 
 
 def alert(message):
-    gui.popup_notify(message, icon="icon.png")
+    gui.popup(message, title="Dimmer Controller", icon="icon.ico")
 
 
 if __name__ == '__main__':
-    VER = "v1.1.0"
+    VER = "v1.1.1"
     TITLE = "Dimmer Controller"
 
     bulb = None
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     # section1 : 연결 전 보여질 부분
     section1 = [
-        [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("192.168.168.28", key='_IP', size=(14, 1)),
+        [gui.Text("Dimmer IP", size=(12, 1)), gui.Input("", key='_IP', size=(14, 1)),
          gui.Button("Connect", key='_CONNECT', size=(9, 1), bind_return_key=True),
          gui.Button("Disconnect", key='_DISCONNECT', size=(9, 1), disabled=True, visible=False)],
         [gui.Text("Dimmer 시간", size=(12, 1)), gui.InputText("", key="_CLOCK", size=(19, 1), readonly=True), gui.Button("Sync", key='_SYNC', pad=(6, 1))],
