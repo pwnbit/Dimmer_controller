@@ -1,6 +1,7 @@
 import PySimpleGUI as gui
 import socket
 import flux_led
+import re
 from os import system
 from time import sleep
 
@@ -9,7 +10,7 @@ from time import sleep
 
 
 def led_connect(ip):
-    led = flux_led.WifiLedBulb(ipaddr=ip, timeout=3)
+    led = flux_led.WifiLedBulb(ipaddr=ip, timeout=1)
     led.update_state()
     return led
 
@@ -68,8 +69,22 @@ def change_brightness(led, percent):
     led.update_state()
 
 
+def verify_val(val_type, val):
+    if val_type == 'ip':
+        if re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', val):
+            return True
+    elif val_type == 'number':
+        if val.isnumeric():
+            return True
+    return False
+
+
+def alert(message):
+    gui.popup_notify(message, icon="icon.png")
+
+
 if __name__ == '__main__':
-    VER = "v1.0.0"
+    VER = "v1.1.0"
     TITLE = "Dimmer Controller"
 
     bulb = None
@@ -114,24 +129,30 @@ if __name__ == '__main__':
         event, values = window.read()
 
         if event == gui.WINDOW_CLOSED:
+            if bulb:
+                bulb.close()
+            window.close()
             break
         elif event == '_CONNECT':
             try:
-                bulb = led_connect(values['_IP'])
-                bulb.update_state()
+                if not verify_val('ip', values['_IP']):
+                    alert("입력한 IP를 확인 해주세요.")
+                else:
+                    bulb = led_connect(values['_IP'])
+                    bulb.update_state()
+                    # Update _SECTION1
+                    window['_IP'].update(disabled=True)
+                    window['_CONNECT'].update(disabled=True, visible=False)
+                    window['_DISCONNECT'].update(disabled=False, visible=True)
+                    window['_BRIGHTNESS'].update(f"{get_brightness(bulb)}%")
+                    window['_SLIDER'].update(get_brightness(bulb), disabled=False)
+                    # Update _SECTION2
+                    window['_CLOCK'].update(bulb.getClock())
+                    window['_TIMER'].update(bulb.getTimers())
+                    window['_SECTION2'].update(visible=True)
             except socket.timeout:
-                print("timeout")
-                exit(1)
-            # Update _SECTION1
-            window['_IP'].update(disabled=True)
-            window['_CONNECT'].update(disabled=True, visible=False)
-            window['_DISCONNECT'].update(disabled=False, visible=True)
-            window['_BRIGHTNESS'].update(f"{get_brightness(bulb)}%")
-            window['_SLIDER'].update(get_brightness(bulb), disabled=False)
-            # Update _SECTION2
-            window['_CLOCK'].update(bulb.getClock())
-            window['_TIMER'].update(bulb.getTimers())
-            window['_SECTION2'].update(visible=True)
+                alert("연결 시간이 초과 되었습니다. 연결 상태를 확인 해주세요.")
+
         elif event == '_DISCONNECT':
             # Update _SECTION1
             window['_IP'].update(disabled=False)
@@ -152,9 +173,12 @@ if __name__ == '__main__':
             window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
             window['_SLIDER'].update(get_brightness(bulb))
         elif event == '_APPLY':
-            change_brightness(bulb, values['_MANUAL'])
-            window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
-            window['_SLIDER'].update(get_brightness(bulb))
+            if not verify_val('number', values['_MANUAL']):
+                alert("숫자만 입력 해주세요.")
+            else:
+                change_brightness(bulb, values['_MANUAL'])
+                window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
+                window['_SLIDER'].update(get_brightness(bulb))
         elif event == '_SLIDER':
             change_brightness(bulb, values['_SLIDER'])
             window['_BRIGHTNESS'].update(f"{get_brightness(bulb)} %")
@@ -167,6 +191,3 @@ if __name__ == '__main__':
             system('start "" https://blog.naver.com/ic21107')
         elif event == '_GITHUB':
             system('start "" https://github.com/pwnbit/Dimmer_controller')
-    if bulb:
-        bulb.close()
-    window.close()
