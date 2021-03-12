@@ -2,11 +2,14 @@
 Wifi LED Cotroller를 PC에서 제어하기 위한 Python 프로그램으로,
 [flux_led](https://github.com/beville/flux_led) 를 기반으로 하고 있습니다.
 
-##호환 제품
+## 호환 제품
 * Magic Home Pro 앱을 사용하는 Wifi Dimmer 제품.
     * [Android App Store](https://play.google.com/store/apps/details?id=com.zengge.wifi&hl=en&gl=us)
     * [Apple App Store](https://apps.apple.com/us/app/magic-home-pro/id1187808229)
     * [AliExpress](https://ko.aliexpress.com/wholesale?catId=0&initiative_id=SB_20210307042017&origin=y&SearchText=magic+home+wifi+controller)
+
+## 다운로드
+* [Github release](https://github.com/pwnbit/Dimmer_controller/releases)
 
 ## 기능 소개
 #### 2021-03-05 v0.1
