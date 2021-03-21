@@ -131,7 +131,7 @@ def scan_cancel(c):
 
 
 if __name__ == '__main__':
-    VER = "v1.3.0"
+    VER = "v1.3.1"
     TITLE = "Dimmer Controller"
 
     bulb = None
