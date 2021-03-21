@@ -4,6 +4,7 @@ import flux_led
 import re
 from os import system
 from time import sleep
+import threading
 
 # PySimpleGUI : https://pypi.org/project/PySimpleGUI/
 # PySimpleGUI cookbook : https://pysimplegui.readthedocs.io/en/latest/cookbook/
@@ -83,8 +84,54 @@ def alert(message):
     gui.popup(message, title="Dimmer Controller", icon="icon.ico")
 
 
+class scan_task:
+    def __init__(self):
+        self._running = True
+        self.device_list = []
+
+    def terminate(self):
+        self._running = False
+
+    def scanner(self, window):
+        ip_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ip_sock.connect(("pwnbit.kr", 443))
+        subnet = '.'.join(ip_sock.getsockname()[0].split('.')[0:3])
+        ip_sock.close()
+        ip = 1
+        while True:
+            if self._running and ip < 256:
+                lookup_ip = f"{subnet}.{ip}"
+                find_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                find_sock.settimeout(0.1)
+                try:
+                    find_sock.sendto(b'HF-A11ASSISTHREAD', (lookup_ip, 48899))
+                    data = find_sock.recvfrom(100)
+                    if type(data[0]) is bytes and type(data[1] is tuple):
+                        data_str = data[0].decode('ascii').split(',')
+                        self.device_list.append(data_str[0])
+                    find_sock.close()
+                except socket.timeout:
+                    pass
+                except ConnectionResetError:
+                    pass
+                ip += 1
+                window.write_event_value('_SCANPROGRESS', (ip, self.device_list))
+            else:
+                break
+
+
+def scan():
+    thread = scan_task()
+    t = threading.Thread(target=thread.scanner, args=(window, ), daemon=True).start()
+    return thread
+
+
+def scan_cancel(c):
+    c.terminate()
+
+
 if __name__ == '__main__':
-    VER = "v1.1.1"
+    VER = "v1.3.0"
     TITLE = "Dimmer Controller"
 
     bulb = None
@@ -104,29 +151,40 @@ if __name__ == '__main__':
 
     # section2 : 연결 후 보여질 부분
     section2 = [
-        [gui.Text("─" * 23)],
+        [gui.HSeparator()],
         [gui.Frame("Presets", [
-            [gui.Button("0%", key='_0'), gui.Button("20%", key='_20'), gui.Button("40%", key='_40'),
-             gui.Button("60%", key='_60'), gui.Button("80%", key='_80'), gui.Button("100%", key='_100'), gui.Text("│", pad=(0, 0)),
-             gui.InputText("", key='_MANUAL', size=(3, 1)), gui.Text("%", pad=(0, 0)), gui.Button("Apply", key='_APPLY')],
+            [gui.Button("0%", key='_0', disabled=True), gui.Button("20%", key='_20', disabled=True), gui.Button("40%", key='_40', disabled=True),
+             gui.Button("60%", key='_60', disabled=True), gui.Button("80%", key='_80', disabled=True), gui.Button("100%", key='_100', disabled=True),
+             gui.Text("│", pad=(0, 0)),
+             gui.InputText("", key='_MANUAL', size=(3, 1), disabled=True), gui.Text("%", pad=(0, 0)), gui.Button("Apply", key='_APPLY', disabled=True)]
         ])],
         [gui.Frame("Timer Settings", [[
-            gui.Listbox(values=(), key="_TIMER", size=(0, 6), no_scrollbar=True, auto_size_text=True, select_mode=gui.SELECT_MODE_SINGLE)]])]
+            gui.Listbox(values=('Unset', 'Unset', 'Unset', 'Unset', 'Unset', 'Unset'), key='_TIMER', size=(70, 6), no_scrollbar=True)]])]
     ]
 
     # Layout
     layout = [
-        [gui.Text(f"{TITLE} - {VER}", font=('맑은 고딕', 18), text_color='#3399ff')],
-        [gui.pin(gui.Column(section1, key='_SECTION1'))],
-        [gui.pin(gui.Column(section2, key='_SECTION2', visible=False))],
-        [gui.Text('Blog: https://blog.naver.com/ic21107', key='_BLOG', pad=(2, 1), enable_events=True)],
-        [gui.Text('Github: https://github.com/pwnbit/Dimmer_controller', key='_GITHUB', pad=(2, 1), enable_events=True)]
+        [
+            gui.Column([[gui.Button("Scan", key="_SCAN", size=(8, 1)),
+                         gui.Text("0%", size=(4, 1), key='_PG')],
+                        [gui.Listbox(values=(), key='_DEVICE', size=(14, 18), no_scrollbar=True, enable_events=True)]
+                        ]),
+            gui.Column([[gui.Text(f"{TITLE} - {VER}", font=('맑은 고딕', 18), text_color='#3399ff')],
+                        [gui.pin(gui.Column(section1, key='_SECTION1'))],
+                        [gui.pin(gui.Column(section2, key='_SECTION2'))],
+                        [gui.Text('Blog: https://blog.naver.com/ic21107', key='_BLOG', pad=(2, 1), enable_events=True)],
+                        [gui.Text('Github: https://github.com/pwnbit/Dimmer_controller', key='_GITHUB', pad=(2, 1), enable_events=True)]
+                        ])
+        ]
     ]
 
     window = gui.Window(f"{TITLE} - {VER}", layout, finalize=True, icon="icon.ico")
-
+    window_active = False
+    thread = ""
+    flag_scan = True
     while True:
         event, values = window.read()
+        print(event, values)
 
         if event == gui.WINDOW_CLOSED:
             if bulb:
@@ -149,21 +207,35 @@ if __name__ == '__main__':
                     # Update _SECTION2
                     window['_CLOCK'].update(bulb.getClock())
                     window['_TIMER'].update(bulb.getTimers())
-                    window['_SECTION2'].update(visible=True)
+                    window['_0'].update(disabled=False)
+                    window['_20'].update(disabled=False)
+                    window['_40'].update(disabled=False)
+                    window['_60'].update(disabled=False)
+                    window['_80'].update(disabled=False)
+                    window['_100'].update(disabled=False)
+                    window['_MANUAL'].update(disabled=False)
+                    window['_APPLY'].update(disabled=False)
             except socket.timeout:
-                alert("연결 시간이 초과 되었습니다. 연결 상태를 확인 해주세요.")
+                alert("연결 시간이 초과 되었습니다. 장치의 연결 상태를 확인 해주세요.")
 
         elif event == '_DISCONNECT':
             # Update _SECTION1
-            window['_IP'].update(disabled=False)
+            window['_IP'].update("", disabled=False)
             window['_CONNECT'].update(disabled=False, visible=True)
             window['_DISCONNECT'].update(disabled=True, visible=False)
             window['_BRIGHTNESS'].update("0%")
             window['_SLIDER'].update("0", disabled=True)
             # Update _SECTION2
             window['_CLOCK'].update("")
-            window['_SECTION2'].update(visible=False)
             window['_TIMER'].update(bulb.getTimers())
+            window['_0'].update(disabled=True)
+            window['_20'].update(disabled=True)
+            window['_40'].update(disabled=True)
+            window['_60'].update(disabled=True)
+            window['_80'].update(disabled=True)
+            window['_100'].update(disabled=True)
+            window['_MANUAL'].update(disabled=True)
+            window['_APPLY'].update(disabled=True)
             if bulb:
                 bulb.close()
 
@@ -191,3 +263,19 @@ if __name__ == '__main__':
             system('start "" https://blog.naver.com/ic21107')
         elif event == '_GITHUB':
             system('start "" https://github.com/pwnbit/Dimmer_controller')
+        elif event == '_SCAN' and flag_scan:
+            window['_SCAN'].update("Cancel")
+            flag_scan = False
+            thread = scan()
+        elif event == '_SCANPROGRESS':
+            window['_PG'].update(f"{int(values['_SCANPROGRESS'][0] / 255 * 100)}%")
+            if values['_SCANPROGRESS'][1]:
+                window['_DEVICE'].update(values['_SCANPROGRESS'][1])
+        elif event == '_SCAN' and not flag_scan:
+            flag_scan = True
+            scan_cancel(thread)
+            window['_SCAN'].update("Scan")
+        elif event == '_DEVICE':
+            if values['_DEVICE']:
+                window['_IP'].update(values['_DEVICE'][0])
+
